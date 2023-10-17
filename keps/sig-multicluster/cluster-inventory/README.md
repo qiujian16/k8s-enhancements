@@ -289,6 +289,11 @@ Multi-cluster admins need to view clusters under management and verify their
 memberships. Multi-cluster admins should be able to understand the status of
 the cluster from this API, including the capacity, healthiness.
 
+#### Story 3: transparent to consumers
+
+Consumers can choose different cluster management tools and switch over among them.
+The tools are all using the same API to define clusters.
+
 ### Notes/Constraints/Caveats (Optional)
 
 <!--
@@ -338,17 +343,30 @@ for the consumers to answer the below questions:
 ### Cluster Name
 
 It is required that cluster name is unique for each cluster, and it should also be unique
-among different providers. This proposal suggests that the `metadata.name` of the cluster
-is always randomly generated comforming to the format of DNS label format.
+among different providers (cluster manager). There are two option to ensure it is uniqueness
+
+#### Option 1
+The `metadat.name` of the cluster should never be set upon creation. Only `metadata.generateName`
+can be set. 
+
+#### Option 2
+The `metadata.name` and `metadata.generataName` must have prefix which should be the same as
+the `spec.clusterManager.name`. Different cluster manager must set a different value of
+`spec.clusterManager.name` when the cluster is created.
+
+These two options can be achieved by a validating webhook or a `ValidatingAdmissionPolicy` resource.
 
 ### Spec
 
 #### Display name
 
-It is a human readable name of the cluster set by the consumer of the cluster. 
+It is a human-readable name of the cluster set by the consumer of the cluster. 
 
 #### Cluster Manager
 
+Nn immutable field set by a cluster manager when this cluster resources
+is created by it. Each cluster manager instance should set a different values
+to this field
 
 ### Status
 
@@ -449,12 +467,12 @@ when drafting this test plan.
 existing tests to make this code solid enough prior to committing the changes necessary
 to implement this enhancement.
 
-This KEP proposes and out-of-tree CRD that is not expected to integrate with any
-of the Kubernetes CI infrastructure. In addition, it explicitly provides only
-the CRD definition and generated clients for use by third party implementers,
-and does not provide a controller or any other binary with business logic to
-test. Therefore, we only expect unit test to validate the generated client and
-integration tests for API validation tests.
+This KEP proposes and out-of-tree CRD [here](https://github.com/kubernetes-sigs/cluster-inventory-api) 
+that is not expected to integrate with any of the Kubernetes CI infrastructure. 
+In addition, it explicitly provides only the CRD definition and generated clients
+for use by third party implementers, and does not provide a controller or any other
+binary with business logic to test. Therefore, we only expect unit test to validate
+the generated client and integration tests for API validation tests.
 
 However, similar to other out-of-tree CRDs that serve third party implementers,
 such as Gateway API and MCS API, there is rationale for the project to provide

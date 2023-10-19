@@ -173,12 +173,14 @@ updates.
 [documentation style guide]: https://github.com/kubernetes/community/blob/master/contributors/guide/style-guide.md
 -->
 
-Currently, there is a lack of a standardized approach to define a cluster inventory. 
-However, with the growing number of users managing multiple clusters and deploying
-applications across them, projects like Open Cluster Management (OCM), Karmada, Clusternet,
-and Fleet Manager have emerged. This document introduces a proposal for a new universal cluster 
-inventory API. The objective is to establish a shared interface for cluster inventory,
-defining a standard for status reporting while allowing for multiple implementations.
+Currently, there is a lack of a standardized approach to define a
+cluster inventory. However, with the growing number of users managing
+multiple clusters and deploying applications across them, projects like
+Open Cluster Management (OCM), Karmada, Clusternet, and Fleet Manager
+have emerged. This document introduces a proposal for a new universal
+cluster inventory API. The objective is to establish a shared interface
+for cluster inventory, defining a standard for status reporting while
+allowing for multiple implementations.
 
 ## Motivation
 
@@ -191,32 +193,38 @@ demonstrate the interest in a KEP within the wider Kubernetes community.
 [experience reports]: https://github.com/golang/go/wiki/ExperienceReports
 -->
 
-A cluster inventory where users can discover Kubernetes clusters, their properties,
-and their status, is a common component in almost every major multi-cluster management
-solution. Yet, at this moment, there is not a standard way to access such an inventory;
-as we see more and more users embrace the cloud-native approach and deploy workloads across
-multiple clusters in concert with the help of multi-cluster management solutions,
-we believe that it is critical to devise a common API where applications, toolsets,
-and human operators can easily discover clusters under management.
+A cluster inventory where users can discover Kubernetes clusters, their
+properties, and their status, is a common component in almost every
+major multi-cluster management solution. Yet, at this moment, there is
+not a standard way to access such an inventory; as we see more and more
+users embrace the cloud-native approach and deploy workloads across
+multiple clusters in concert with the help of multi-cluster management
+solutions, we believe that it is critical to devise a common API where
+applications, toolsets, and human operators can easily discover clusters
+under management.
 
-By adopting this new cluster inventory API, consumers no longer need to concern
-themselves with the implementation details of various projects. Instead, they can 
-leverage a foundational API for multi-cluster management. Examples of consumers includes:
+By adopting this new cluster inventory API, consumers no longer need to
+concern themselves with the implementation details of various projects.
+Instead, they can leverage a foundational API for multi-cluster
+management. Examples of consumers includes:
 
-* multiple cluster workload scheduler:  we’ve seen requirements on distributing 
-  application/workload to multiple clusters. The scheduling can be based on certain cluster 
-  properties, e.g. cloud the cluster resides in, resources a cluster provides, or latency
-  to some external endpoints. A common cluster inventory API will give schedulers a standard
-  to reason about clusters and help to foster the growth of this area.
-* GitOps tools (ArgoCD, flux etc) are having the requirement to deploy workload to
-  multiple clusters. They either need to build the cluster concept by themselves or
-  understand cluster API from each different cluster management project. A common cluster
-  inventory API can provide a thin compatible layer for different projects.
-* Operation tools or customized external consumers: this API gives a common way for
-  different clouds and vendors to define clusters, providing a vendor agnostic integration
-  point for external tools.
-* Cluster manager implementations themselves, for purposes such as grouping clusters into MCS 
-  API clustersets.
+* multiple cluster workload scheduler: we’ve seen requirements on
+  distributing application/workload to multiple clusters. The scheduling
+  can be based on certain cluster properties, e.g. cloud the cluster
+  resides in, resources a cluster provides, or latency to some external
+  endpoints. A common cluster inventory API will give schedulers a
+  standard to reason about clusters and help to foster the growth of
+  this area.
+* GitOps tools (ArgoCD, flux etc) are having the requirement to deploy
+  workload to multiple clusters. They either need to build the cluster
+  concept by themselves or understand cluster API from each different
+  cluster management project. A common cluster inventory API can provide
+  a thin compatible layer for different projects.
+* Operation tools or customized external consumers: this API gives a
+  common way for different clouds and vendors to define clusters,
+  providing a vendor agnostic integration point for external tools.
+* Cluster manager implementations themselves, for purposes such as
+  grouping clusters into MCS API clustersets.
 
 ### Goals
 
@@ -226,12 +234,15 @@ know that this has succeeded?
 -->
 
 * Establish a standardized cluster inventory API to represent clusters.
-* Lay the groundwork for multi-cluster tooling by providing a foundational component.
-* Accommodate multiple implementations to encourage flexibility and adoption.
-* Allow for future extensions and new use cases by leaving room for further
-  development and enhancements. A unified API, such as this one, is most 
-  effective when platform extension authors can use it as a foundational tool 
-  to create extensions compatible with multiple providers.
+* Lay the groundwork for multi-cluster tooling by providing a
+  foundational component.
+* Accommodate multiple implementations to encourage flexibility and
+  adoption.
+* Allow for future extensions and new use cases by leaving room for
+  further development and enhancements. A unified API, such as this one,
+  is most effective when platform extension authors can use it as a
+  foundational tool to create extensions compatible with multiple
+  providers.
 
 
 ### Non-Goals
@@ -258,15 +269,17 @@ nitty-gritty.
 -->
 
 the API proposed by this KEP aims to
-- Provide a reliable, consistent, and automated approach for any multi-cluster
-  application (framework, toolset) to discover available clusters and take actions
-  accordingly, in a way similar to service discovery works in a microservice
-  architecture. Through the inventory, the application can query for a list of clusters
-  to access, or watch for an ever-flowing stream of cluster lifecycle events which the
-  application can act upon timely, such as auto-scaling, upgrades, failures, and
-  connectivity issues.
-- Provide a simple, clear interface for human operators to understand clusters under
-  management, and troubleshoot them in a streamlined manner.
+- Provide a reliable, consistent, and automated approach for any
+  multi-cluster application (framework, toolset) to discover available
+  clusters and take actions accordingly, in a way similar to service
+  discovery works in a microservice architecture. Through the inventory,
+  the application can query for a list of clusters to access, or watch
+  for an ever-flowing stream of cluster lifecycle events which the
+  application can act upon timely, such as auto-scaling, upgrades,
+  failures, and connectivity issues.
+- Provide a simple, clear interface for human operators to understand
+  clusters under management, and troubleshoot them in a streamlined
+  manner.
 
 ### User Stories (Optional)
 
@@ -277,22 +290,59 @@ the system. The goal here is to make this feel real for users without getting
 bogged down.
 -->
 
-#### Story 1: multicluster workload distribution
+#### Story 1: Multicluster Workload Distribution
 
-The API can be used as the base for multicluster scheduling across the clusters.
-Such that other workload distribution tools, e.g. GitOps or Work API can utilize
-it to decide which cluster to deploy the workload.
+In this scenario, the unified API acts as a foundation for multicluster
+scheduling across various clusters. This means that the API will provide
+a standardized way to distribute workloads across multiple clusters. For
+instance, workload distribution tools like GitOps or Work API can
+leverage this API to make informed decisions about which cluster is best
+suited to handle a particular workload.
 
-#### Story 2: operations and management
+This could be based on factors such as the current load on the cluster,
+its capacity, and its proximity to the data source or end-users. For
+example, if a cluster is already running at high capacity, the API could
+direct the workload to a less busy cluster. This ensures optimal
+resource utilization and can significantly improve the performance and
+efficiency of applications running on the clusters.
 
-Multi-cluster admins need to view clusters under management and verify their
-memberships. Multi-cluster admins should be able to understand the status of
-the cluster from this API, including the capacity, healthiness.
+#### Story 2: Operations and Management
 
-#### Story 3: transparent to consumers
+For multi-cluster administrators, the unified API provides a
+comprehensive view of all the clusters under their management. This
+includes verifying their memberships, understanding their status,
+capacity, and healthiness.
 
-Consumers can choose different cluster management tools and switch over among them.
-The tools are all using the same API to define clusters.
+For instance, the API could provide real-time data about the CPU usage,
+memory consumption, network latency, and other key performance
+indicators of each cluster. If a cluster is nearing its capacity or
+experiencing issues, the API could alert the administrators, allowing
+them to take proactive measures to prevent downtime or performance
+degradation.
+
+Moreover, the API could also provide insights into the membership of
+each cluster, such as the number of nodes, their roles, and their
+current status. This can help administrators manage the clusters more
+effectively and ensure that they are always operating at optimal levels.
+
+#### Story 3: Transparent to Consumers
+
+The unified API ensures that consumers have the flexibility to choose
+different cluster management tools and switch among them as needed.
+Regardless of the tool they choose, they all use the same API to define
+clusters.
+
+This means that consumers can switch from one tool to another without
+having to worry about compatibility issues or learning a new API. This
+can significantly reduce the learning curve and make it easier for
+consumers to adopt new tools.
+
+Moreover, the unified API can also provide a consistent user experience
+across different tools. For example, if a consumer is used to a
+particular command or function in one tool, they can expect the same
+command or function to work in the same way in another tool. This can
+further enhance the usability and adoption of different cluster
+management tools.
 
 ### Notes/Constraints/Caveats (Optional)
 
@@ -326,13 +376,14 @@ required) or even code snippets. If there's any ambiguity about HOW your
 proposal will be implemented, this is the place to discuss them.
 -->
 
-We try to summarize the most common properties that should be able to represent
-a cluster and support the above use case at the minimum scope.
+We try to summarize the most common properties that should be able to
+represent a cluster and support the above use case at the minimum scope.
 
-The target consumers of the API are users who manage the clusters and other 
-tools to understand the clusters concept from the API for multicluster scheduling, 
-workload distribution and cluster management. The API aims to provide the information
-for the consumers to answer the below questions:
+The target consumers of the API are users who manage the clusters and
+other tools to understand the clusters concept from the API for
+multicluster scheduling, workload distribution and cluster management.
+The API aims to provide the information for the consumers to answer the
+below questions:
 
 * Is the cluster under management?
 * How can I select a cluster?
@@ -342,72 +393,89 @@ for the consumers to answer the below questions:
 
 ### Cluster Name
 
-It is required that cluster name is unique for each cluster, and it should also be unique
-among different providers (cluster manager). There are two option to ensure it is uniqueness
+It is required that cluster name is unique for each cluster, and it
+should also be unique among different providers (cluster manager). There
+are two option to ensure it is uniqueness
 
 #### Option 1
-The `metadat.name` of the cluster should never be set upon creation. Only `metadata.generateName`
-can be set. 
+
+The `metadat.name` of the cluster should never be set upon creation.
+Only `metadata.generateName` can be set.
 
 #### Option 2
-The `metadata.name` and `metadata.generataName` must have prefix which should be the same as
-the `spec.clusterManager.name`. Different cluster manager must set a different value of
-`spec.clusterManager.name` when the cluster is created.
 
-These two options can be achieved by a validating webhook or a `ValidatingAdmissionPolicy` resource.
+The `metadata.name` and `metadata.generataName` must have prefix which
+should be the same as the `spec.clusterManager.name`. Different cluster
+manager must set a different value of `spec.clusterManager.name` when
+the cluster is created.
+
+These two options can be achieved by a validating webhook or a
+`ValidatingAdmissionPolicy` resource.
 
 ### Spec
 
 #### Display name
 
-It is a human-readable name of the cluster set by the consumer of the cluster. 
+It is a human-readable name of the cluster set by the consumer of the
+cluster.
 
 #### Cluster Manager
 
 Nn immutable field set by a cluster manager when this cluster resources
-is created by it. Each cluster manager instance should set a different values
-to this field
+is created by it. Each cluster manager instance should set a different
+values to this field
 
 ### Status
 
 #### Version
+
 Kubernetes version of the cluster
 
-Versions of the kubernetes can let consumers understand the capability of the kubernetes,
-such as what API is supported.
+Versions of the kubernetes can let consumers understand the capability
+of the kubernetes, such as what API is supported.
 
 #### Resources
-Resources include capacity and allocatable, which is the sum of the capacity/allocatable
-of nodes on the cluster. It is useful for users to know the sizing of the cluster,
-and also schedulers to sort or bin pack the workload to clusters.
+
+Resources include capacity and allocatable, which is the sum of the
+capacity/allocatable of nodes on the cluster. It is useful for users to
+know the sizing of the cluster, and also schedulers to sort or bin pack
+the workload to clusters.
 
 #### Properties
-Name/value pairs to represent properties of the clusters. It could be a collection
-of ClusterProperty resources, but could also be info based on other implementations.
+
+Name/value pairs to represent properties of the clusters. It could be a
+collection of ClusterProperty resources, but could also be info based on
+other implementations.
 
 #### Conditions
-Record cluster’s healthiness condition and easy to extend, conforming to metav1.Condition format.
+
+Record cluster’s healthiness condition and easy to extend, conforming to
+metav1.Condition format.
 
 Predefined condition types:
-- Healthy: indicate the cluster is in a good state. (state: True/False/Unknown).
-  Healthiness can have different meanings in different scenarios. We will have
-  multiple condition types to define healthiness:
-  - ControlPlaneHealthy is to define whether the controlplane of the cluster is in the healthy state.
+- Healthy: indicate the cluster is in a good state. (state:
+  True/False/Unknown). Healthiness can have different meanings in
+  different scenarios. We will have multiple condition types to define
+  healthiness:
+  - ControlPlaneHealthy is to define whether the controlplane of the
+    cluster is in the healthy state.
     * apiserver/healthz
     * controller-manager/healthz
     * scheduler/healthz
     * etcd/healthz
-  - AllNodesHealthy is to define if the nodes in the cluster are in a healthy state. 
-    If one node is not healthy, the status of NodeHealthy is set to false with the
-    message indicating details. (todo tolerance, it should be configurable)
-  
-  It would be useful to collect the healthiness of other subsystems in the cluster,
-  e.g. network, dns, storage, or ingress. However, it is not easy to collect that
-  information in a common way with different implementations of network or storage
-  providers. We decide not to include other subsystems healthiness conditions in
-  the initial phase. 
-- Joined: indicate the cluster is under management by the control plane. The status 
-  of the cluster SHOULD be updated by the controlplane under this condition.
+  - AllNodesHealthy is to define if the nodes in the cluster are in a
+    healthy state. If one node is not healthy, the status of NodeHealthy
+    is set to false with the message indicating details. (todo
+    tolerance, it should be configurable)
+
+  It would be useful to collect the healthiness of other subsystems in
+  the cluster, e.g. network, dns, storage, or ingress. However, it is
+  not easy to collect that information in a common way with different
+  implementations of network or storage providers. We decide not to
+  include other subsystems healthiness conditions in the initial phase.
+- Joined: indicate the cluster is under management by the control plane.
+  The status of the cluster SHOULD be updated by the controlplane under
+  this condition.
 
 ## API Example
 
@@ -467,18 +535,20 @@ when drafting this test plan.
 existing tests to make this code solid enough prior to committing the changes necessary
 to implement this enhancement.
 
-This KEP proposes and out-of-tree CRD [here](https://github.com/kubernetes-sigs/cluster-inventory-api) 
-that is not expected to integrate with any of the Kubernetes CI infrastructure. 
-In addition, it explicitly provides only the CRD definition and generated clients
-for use by third party implementers, and does not provide a controller or any other
-binary with business logic to test. Therefore, we only expect unit test to validate
-the generated client and integration tests for API validation tests.
+This KEP proposes and out-of-tree CRD
+[here](https://github.com/kubernetes-sigs/cluster-inventory-api) that is
+not expected to integrate with any of the Kubernetes CI infrastructure.
+In addition, it explicitly provides only the CRD definition and
+generated clients for use by third party implementers, and does not
+provide a controller or any other binary with business logic to test.
+Therefore, we only expect unit test to validate the generated client and
+integration tests for API validation tests.
 
-However, similar to other out-of-tree CRDs that serve third party implementers,
-such as Gateway API and MCS API, there is rationale for the project to provide
-conformance tests for implementers to use to confirm they adhere to the
-restrictions set forth in this KEP that are not otherwise enforced by the CRD
-definition.
+However, similar to other out-of-tree CRDs that serve third party
+implementers, such as Gateway API and MCS API, there is rationale for
+the project to provide conformance tests for implementers to use to
+confirm they adhere to the restrictions set forth in this KEP that are
+not otherwise enforced by the CRD definition.
 
 ##### Prerequisite testing updates
 
@@ -508,18 +578,51 @@ implementing this enhancement to ensure the enhancements have also solid foundat
 
 #### Beta
 
-- At least two providers and one consumers using cluster inventory API
+- Gather feedback from users during the Alpha stage to identify any
+  issues, limitations, or areas for improvement. Address this feedback
+  by making the necessary changes to the API and iterating on its design
+  and functionality.
+- The API should support the addition of scheduling features, such as:
+  - Load balancing: Distribute workloads evenly across clusters based on
+    their current load and capacity.
+  - Affinity and anti-affinity rules: Allow users to define rules for
+    placing workloads on specific clusters or ensuring that certain
+    workloads are not placed on the same cluster.
+  - Priority-based scheduling: Enable users to assign priorities to
+    workloads, ensuring that higher-priority workloads are scheduled
+    before lower-priority ones.
+  - Resource-based scheduling: Schedule workloads based on the
+    availability of specific resources, such as CPU, memory, or storage,
+    in each cluster.
+- At least two providers and one consumers using cluster inventory API.
 
 #### GA
 
 - N examples of real-world usage
 - N installs
-- More rigorous forms of testing—e.g., downgrade tests and scalability tests
+- More rigorous forms of testing—e.g., downgrade tests and scalability
+  tests
 - Allowing time for feedback
+- Stability: The API should demonstrate stability in terms of its
+  reliability.
+- Functionality: The API should provide the necessary functionality for
+  multicluster scheduling, including the ability to distribute workloads
+  across clusters, manage cluster memberships, and monitor cluster
+  health and capacity. This should be validated through a series of
+  functional tests and real-world use cases.
+- Integration: Ensure that the API can be easily integrated with popular
+  workload distribution tools, such as GitOps and Work API. This may
+  involve developing plugins or extensions for these tools or providing
+  clear guidelines on how to integrate them with the unified API.
+- Performance and Scalability: Conduct performance and scalability tests
+  to ensure that the API can handle a large number of clusters and
+  workloads without degrading its performance. This may involve stress
+  testing the API with a high volume of requests or simulating
+  large-scale deployments.
 
 **Note:** Generally we also wait at least two releases between beta and
-GA/stable, because there's no opportunity for user feedback, or even bug reports,
-in back-to-back releases.
+GA/stable, because there's no opportunity for user feedback, or even bug
+reports, in back-to-back releases.
 
 ### Upgrade / Downgrade Strategy
 
@@ -572,30 +675,30 @@ well as the [existing list] of feature gates.
   - Components depending on the feature gate:
 - [x] Other
   - Describe the mechanism:
-  - Will enabling / disabling the feature require downtime of the control
-    plane?
-  - Will enabling / disabling the feature require downtime or reprovisioning
-    of a node?
+  - Will enabling / disabling the feature require downtime of the
+    control plane?
+  - Will enabling / disabling the feature require downtime or
+    reprovisioning of a node?
 
 ###### Does enabling the feature change any default behavior?
 
-  - No default Kubernetes behavior is currently planned to be based on this
-feature; it is designed to be used by the separately installed, out-of-tree,
-multicluster management providers and consumers.
+- No default Kubernetes behavior is currently planned to be based on
+  this feature; it is designed to be used by the separately installed,
+  out-of-tree, multicluster management providers and consumers.
 
 ###### Can the feature be disabled once it has been enabled (i.e. can we roll back the enablement)?
 
 - Yes, as this feature only describes a CRD, it can most directly be
-  disabled by uninstalling the CRD. 
+  disabled by uninstalling the CRD.
 
 ###### What happens if we reenable the feature if it was previously rolled back?
 
 ###### Are there any tests for feature enablement/disablement?
 
-- As a dependency only for an out-of-tree component, there will not be e2e
-  tests for feature enablement/disablement of this CRD in core Kubernetes. The
-  e2e test can be provided by multicluster management providers who support this
-  API.
+- As a dependency only for an out-of-tree component, there will not be
+  e2e tests for feature enablement/disablement of this CRD in core
+  Kubernetes. The e2e test can be provided by multicluster management
+  providers who support this API.
 
 ### Rollout, Upgrade and Rollback Planning
 
@@ -640,10 +743,10 @@ Recall that end users cannot usually observe component logs or access metrics.
 -->
 
 - [ ] Events
-  - Event Reason: 
+  - Event Reason:
 - [ ] API .status
-  - Condition name: 
-  - Other field: 
+  - Condition name:
+  - Other field:
 - [ ] Other (treat as last resort)
   - Details:
 

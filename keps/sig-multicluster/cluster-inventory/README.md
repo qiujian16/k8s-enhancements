@@ -281,6 +281,19 @@ the API proposed by this KEP aims to
   clusters under management, and troubleshoot them in a streamlined
   manner.
 
+### Terminology
+
+- **Cluster Manager**: An entity that creates the cluster inventory API 
+  resources per spoke cluster, and keeps their status up-to-date. Each
+  cluster manager SHOULD be identified with a unique name. Each cluster
+  inventory resource SHOULD be managed by only one cluster manager. Examples
+  of cluster manager are projects like OCM, Karmada, Clusternet or Azure
+  fleet manager.
+
+- **Cluster Inventory Consumer**: Users or third party tools that use
+  cluster inventory API for the purpose of workload distribution, operation
+  management etc. The consumer SHOULD not create this API resource.
+
 ### User Stories (Optional)
 
 <!--
@@ -295,9 +308,10 @@ bogged down.
 In this scenario, the unified API acts as a foundation for multicluster
 scheduling across various clusters. This means that the API will provide
 a standardized way to distribute workloads across multiple clusters. For
-instance, workload distribution tools like GitOps or Work API can
-leverage this API to make informed decisions about which cluster is best
-suited to handle a particular workload.
+instance, workload distribution tools like GitOps or [Work API]
+(https://github.com/kubernetes-sigs/work-api) can leverage this API to
+make informed decisions about which cluster is best suited to handle a
+particular workload.
 
 This could be based on factors such as the current load on the cluster,
 its capacity, and its proximity to the data source or end-users. For
@@ -332,17 +346,17 @@ different cluster management tools and switch among them as needed.
 Regardless of the tool they choose, they all use the same API to define
 clusters.
 
-This means that consumers can switch from one tool to another without
+This means that consumers can switch from one cluster manager to another without
 having to worry about compatibility issues or learning a new API. This
 can significantly reduce the learning curve and make it easier for
 consumers to adopt new tools.
 
 Moreover, the unified API can also provide a consistent user experience
-across different tools. For example, if a consumer is used to a
+across different cluster managers. For example, if a consumer is used to a
 particular command or function in one tool, they can expect the same
 command or function to work in the same way in another tool. This can
 further enhance the usability and adoption of different cluster
-management tools.
+manager.
 
 ### Notes/Constraints/Caveats (Optional)
 
@@ -594,6 +608,9 @@ implementing this enhancement to ensure the enhancements have also solid foundat
   - Resource-based scheduling: Schedule workloads based on the
     availability of specific resources, such as CPU, memory, or storage,
     in each cluster.
+- The API should expose access information including but not limited to:
+  - APIServer endpoint url of the spoke cluster.
+  - Credential with limited access to the spoke cluster.
 - At least two providers and one consumers using cluster inventory API.
 
 #### GA

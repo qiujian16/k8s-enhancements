@@ -413,12 +413,12 @@ are two option to ensure it is uniqueness
 
 #### Option 1
 
-The `metadat.name` of the cluster should never be set upon creation.
+The `metadata.name` of the cluster should never be set upon creation.
 Only `metadata.generateName` can be set.
 
 #### Option 2
 
-The `metadata.name` and `metadata.generataName` must have prefix which
+The `metadata.name` and `metadata.generateName` must have prefix which
 should be the same as the `spec.clusterManager.name`. Different cluster
 manager must set a different value of `spec.clusterManager.name` when
 the cluster is created.

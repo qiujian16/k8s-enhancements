@@ -2,6 +2,7 @@ title: Cluster Inventory API
 kep-number: NNNN
 authors:
   - "@qiujian16"
+  - "@dixudx"
 owning-sig: sig-multicluster
 status: provisional
 creation-date: 2023-09-13

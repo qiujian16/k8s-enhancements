@@ -284,7 +284,7 @@ the API proposed by this KEP aims to
 ### Terminology
 
 - **Cluster Manager**: An entity that creates the cluster inventory API 
-  resources per spoke cluster, and keeps their status up-to-date. Each
+  resources per member cluster, and keeps their status up-to-date. Each
   cluster manager SHOULD be identified with a unique name. Each cluster
   inventory resource SHOULD be managed by only one cluster manager. Examples
   of cluster manager are projects like OCM, Karmada, Clusternet or Azure
@@ -293,6 +293,11 @@ the API proposed by this KEP aims to
 - **Cluster Inventory Consumer**: Users or third party tools that use
   cluster inventory API for the purpose of workload distribution, operation
   management etc. The consumer SHOULD not create this API resource.
+
+- **Member Cluster**: A kubernetes cluster that is managed by the cluster
+manager. A cluster manager SHOULD have sufficient permission to access
+the member cluster to fetch the information so it can update the status
+of the cluster inventory API resource.
 
 ### User Stories (Optional)
 
@@ -308,10 +313,10 @@ bogged down.
 In this scenario, the unified API acts as a foundation for multicluster
 scheduling across various clusters. This means that the API will provide
 a standardized way to distribute workloads across multiple clusters. For
-instance, workload distribution tools like GitOps or [Work API]
-(https://github.com/kubernetes-sigs/work-api) can leverage this API to
-make informed decisions about which cluster is best suited to handle a
-particular workload.
+instance, workload distribution tools like GitOps or
+[Work API](https://github.com/kubernetes-sigs/work-api) can leverage this
+API to make informed decisions about which cluster is best suited to handle
+a particular workload.
 
 This could be based on factors such as the current load on the cluster,
 its capacity, and its proximity to the data source or end-users. For
@@ -435,9 +440,14 @@ cluster.
 
 #### Cluster Manager
 
-Nn immutable field set by a cluster manager when this cluster resources
+An immutable field set by a cluster manager when this cluster resources
 is created by it. Each cluster manager instance should set a different
-values to this field
+values to this field.
+
+In addition, a predefined label with key "x-k8s.io/cluster-manager" needs
+to be added by the cluster manager upon creation. The value of the label
+MUST be the same as the name of the cluster manager. The purpose of this
+label is to make filter clusters from different cluster managers eaiser.
 
 ### Status
 
@@ -467,7 +477,7 @@ Record cluster’s healthiness condition and easy to extend, conforming to
 metav1.Condition format.
 
 Predefined condition types:
-- Healthy: indicate the cluster is in a good state. (state:
+- Healthy conditions indicate the cluster is in a good state. (state:
   True/False/Unknown). Healthiness can have different meanings in
   different scenarios. We will have multiple condition types to define
   healthiness:
@@ -487,8 +497,8 @@ Predefined condition types:
   not easy to collect that information in a common way with different
   implementations of network or storage providers. We decide not to
   include other subsystems healthiness conditions in the initial phase.
-- Joined: indicate the cluster is under management by the control plane.
-  The status of the cluster SHOULD be updated by the controlplane under
+- Joined: indicate the cluster is under management by the cluster manager.
+  The status of the cluster SHOULD be updated by the cluster manager under
   this condition.
 
 ## API Example
@@ -609,8 +619,8 @@ implementing this enhancement to ensure the enhancements have also solid foundat
     availability of specific resources, such as CPU, memory, or storage,
     in each cluster.
 - The API should expose access information including but not limited to:
-  - APIServer endpoint url of the spoke cluster.
-  - Credential with limited access to the spoke cluster.
+  - APIServer endpoint url of the member cluster.
+  - Credential with limited access to the member cluster.
 - At least two providers and one consumers using cluster inventory API.
 
 #### GA

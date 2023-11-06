@@ -83,18 +83,35 @@ tags, and then generate with `hack/update-toc.sh`.
   - [Goals](#goals)
   - [Non-Goals](#non-goals)
 - [Proposal](#proposal)
+  - [Terminology](#terminology)
   - [User Stories (Optional)](#user-stories-optional)
-    - [Story 1](#story-1)
-    - [Story 2](#story-2)
+    - [Story 1: Multicluster Workload Distribution](#story-1-multicluster-workload-distribution)
+    - [Story 2: Operations and Management](#story-2-operations-and-management)
+    - [Story 3: Transparent to Consumers](#story-3-transparent-to-consumers)
   - [Notes/Constraints/Caveats (Optional)](#notesconstraintscaveats-optional)
   - [Risks and Mitigations](#risks-and-mitigations)
 - [Design Details](#design-details)
+  - [Cluster Name](#cluster-name)
+    - [Option 1](#option-1)
+    - [Option 2](#option-2)
+  - [Spec](#spec)
+    - [Display name](#display-name)
+    - [Cluster Manager](#cluster-manager)
+  - [Status](#status)
+    - [Version](#version)
+    - [Resources](#resources)
+    - [Properties](#properties)
+    - [Conditions](#conditions)
+- [API Example](#api-example)
   - [Test Plan](#test-plan)
       - [Prerequisite testing updates](#prerequisite-testing-updates)
       - [Unit tests](#unit-tests)
       - [Integration tests](#integration-tests)
       - [e2e tests](#e2e-tests)
   - [Graduation Criteria](#graduation-criteria)
+    - [Alpha](#alpha)
+    - [Beta](#beta)
+    - [GA](#ga)
   - [Upgrade / Downgrade Strategy](#upgrade--downgrade-strategy)
   - [Version Skew Strategy](#version-skew-strategy)
 - [Production Readiness Review Questionnaire](#production-readiness-review-questionnaire)
@@ -243,6 +260,7 @@ know that this has succeeded?
   is most effective when platform extension authors can use it as a
   foundational tool to create extensions compatible with multiple
   providers.
+* Allow cluster managers of different types to share a single point inventory.
 
 
 ### Non-Goals
@@ -290,14 +308,14 @@ the API proposed by this KEP aims to
   of cluster manager are projects like OCM, Karmada, Clusternet or Azure
   fleet manager.
 
-- **Cluster Inventory Consumer**: Users or third party tools that use
-  cluster inventory API for the purpose of workload distribution, operation
-  management etc. The consumer SHOULD not create this API resource.
+- **Cluster Inventory Consumer**: the person running the cluster managers
+  or the person developing extensions for cluster managers for the purpose of
+  workload distribution, operation management etc.
 
 - **Member Cluster**: A kubernetes cluster that is managed by the cluster
-manager. A cluster manager SHOULD have sufficient permission to access
-the member cluster to fetch the information so it can update the status
-of the cluster inventory API resource.
+  manager. A cluster manager SHOULD have sufficient permission to access
+  the member cluster to fetch the information so it can update the status
+  of the cluster inventory API resource.
 
 ### User Stories (Optional)
 
@@ -310,20 +328,26 @@ bogged down.
 
 #### Story 1: Multicluster Workload Distribution
 
-In this scenario, the unified API acts as a foundation for multicluster
-scheduling across various clusters. This means that the API will provide
-a standardized way to distribute workloads across multiple clusters. For
-instance, workload distribution tools like GitOps or
+In this scenario, a standard API acts as a foundation for multicluster
+scheduling decisions across various clusters. This means that the
+API will provide a single point of contact to retrieve information that can be
+used to make informed scheduling decisions for workloads across multiple
+clusters. For instance, workload distribution tools like GitOps or
 [Work API](https://github.com/kubernetes-sigs/work-api) can leverage this
 API to make informed decisions about which cluster is best suited to handle
 a particular workload.
 
-This could be based on factors such as the current load on the cluster,
-its capacity, and its proximity to the data source or end-users. For
-example, if a cluster is already running at high capacity, the API could
-direct the workload to a less busy cluster. This ensures optimal
-resource utilization and can significantly improve the performance and
-efficiency of applications running on the clusters.
+Examples of the multicluster scheduling includes:
+
+- As a user I want to run a workload on an EKS cluster that resides in us-east-1.
+  I want to submit my workload if and only if a cluster satisfies that constraint.
+- As a user I want to run a workload on a cluster that has Kueue/Yunikorn enabled.
+  The cluster level scheduling wants to submit a workload on a cluster that has the
+  shortest time to being picked up.
+- As a user I want to run a workload on a cluster that has certain CRDs installed.
+- As a user I want to deploy a workload to my on-prem cluster group.
+- As a user I want to run a workload close to the data source or end-users.
+- As a user I want to run a workload to the less busy cluster.
 
 #### Story 2: Operations and Management
 
@@ -458,6 +482,10 @@ Kubernetes version of the cluster
 Versions of the kubernetes can let consumers understand the capability
 of the kubernetes, such as what API is supported.
 
+With recent conversations about kube-apiserver and enabled featureset version,
+it is possible to incorporate other version relating to the cluster, such as
+minimum kubelet version, maximum kubelet version, and enabled featureset version.
+
 #### Resources
 
 Resources include capacity and allocatable, which is the sum of the
@@ -487,7 +515,7 @@ Predefined condition types:
     * controller-manager/healthz
     * scheduler/healthz
     * etcd/healthz
-  - AllNodesHealthy is to define if the nodes in the cluster are in a
+  - <<[UNRESOLVED]>> AllNodesHealthy is to define if the nodes in the cluster are in a
     healthy state. If one node is not healthy, the status of NodeHealthy
     is set to false with the message indicating details. (todo
     tolerance, it should be configurable)

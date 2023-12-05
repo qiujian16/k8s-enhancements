@@ -296,8 +296,7 @@ the API proposed by this KEP aims to
   application can act upon timely, such as auto-scaling, upgrades,
   failures, and connectivity issues.
 - Provide a simple, clear interface for human operators to understand
-  clusters under management, and troubleshoot them in a streamlined
-  manner.
+  clusters under management.
 
 ### Terminology
 
@@ -341,9 +340,6 @@ Examples of the multicluster scheduling includes:
 
 - As a user I want to run a workload on an EKS cluster that resides in us-east-1.
   I want to submit my workload if and only if a cluster satisfies that constraint.
-- As a user I want to run a workload on a cluster that has Kueue/Yunikorn enabled.
-  The cluster level scheduling wants to submit a workload on a cluster that has the
-  shortest time to being picked up.
 - As a user I want to run a workload on a cluster that has certain CRDs installed.
 - As a user I want to deploy a workload to my on-prem cluster group.
 - As a user I want to run a workload close to the data source or end-users.
@@ -356,14 +352,7 @@ comprehensive view of all the clusters under their management. This
 includes verifying their memberships, understanding their status,
 capacity, and healthiness.
 
-For instance, the API could provide real-time data about the CPU usage,
-memory consumption, network latency, and other key performance
-indicators of each cluster. If a cluster is nearing its capacity or
-experiencing issues, the API could alert the administrators, allowing
-them to take proactive measures to prevent downtime or performance
-degradation.
-
-Moreover, the API could also provide insights into the membership of
+The API could also provide insights into the membership of
 each cluster, such as the number of nodes, their roles, and their
 current status. This can help administrators manage the clusters more
 effectively and ensure that they are always operating at optimal levels.
@@ -471,7 +460,7 @@ values to this field.
 In addition, a predefined label with key "x-k8s.io/cluster-manager" needs
 to be added by the cluster manager upon creation. The value of the label
 MUST be the same as the name of the cluster manager. The purpose of this
-label is to make filter clusters from different cluster managers eaiser.
+label is to make filter clusters from different cluster managers easier.
 
 ### Status
 
@@ -649,7 +638,7 @@ implementing this enhancement to ensure the enhancements have also solid foundat
 - The API should expose access information including but not limited to:
   - APIServer endpoint url of the member cluster.
   - Credential with limited access to the member cluster.
-- At least two providers and one consumers using cluster inventory API.
+- At least two providers and one consumer using cluster inventory API.
 
 #### GA
 

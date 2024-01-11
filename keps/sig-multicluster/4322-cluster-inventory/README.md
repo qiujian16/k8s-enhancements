@@ -58,7 +58,7 @@ If none of those approvers are still appropriate, then changes to that list
 should be approved by the remaining approvers and/or the owning SIG (or
 SIG Architecture for cross-cutting KEPs).
 -->
-# KEP-NNNN: Cluster Inventory API
+# KEP-4322: Cluster Inventory API
 
 <!--
 This is the title of your KEP. Keep it short, simple, and descriptive. A good
@@ -99,10 +99,10 @@ tags, and then generate with `hack/update-toc.sh`.
     - [Cluster Manager](#cluster-manager)
   - [Status](#status)
     - [Version](#version)
-    - [Resources](#resources)
     - [Properties](#properties)
     - [Conditions](#conditions)
 - [API Example](#api-example)
+  - [Scalability implication](#scalability-implication)
   - [Test Plan](#test-plan)
       - [Prerequisite testing updates](#prerequisite-testing-updates)
       - [Unit tests](#unit-tests)
@@ -301,7 +301,7 @@ the API proposed by this KEP aims to
 ### Terminology
 
 - **Cluster Manager**: An entity that creates the cluster inventory API 
-  resources per member cluster, and keeps their status up-to-date. Each
+  object per member cluster, and keeps their status up-to-date. Each
   cluster manager SHOULD be identified with a unique name. Each cluster
   inventory resource SHOULD be managed by only one cluster manager. Examples
   of cluster manager are projects like OCM, Karmada, Clusternet or Azure
@@ -426,8 +426,8 @@ below questions:
 ### Cluster Name
 
 It is required that cluster name is unique for each cluster, and it
-should also be unique among different providers (cluster manager). There
-are two option to ensure it is uniqueness
+should also be unique among different providers (cluster manager). It
+is cluster managers's responsibility to ensure the name uniqueness.
 
 #### Option 1
 
@@ -440,9 +440,6 @@ The `metadata.name` and `metadata.generateName` must have prefix which
 should be the same as the `spec.clusterManager.name`. Different cluster
 manager must set a different value of `spec.clusterManager.name` when
 the cluster is created.
-
-These two options can be achieved by a validating webhook or a
-`ValidatingAdmissionPolicy` resource.
 
 ### Spec
 
@@ -475,13 +472,6 @@ With recent conversations about kube-apiserver and enabled featureset version,
 it is possible to incorporate other version relating to the cluster, such as
 minimum kubelet version, maximum kubelet version, and enabled featureset version.
 
-#### Resources
-
-Resources include capacity and allocatable, which is the sum of the
-capacity/allocatable of nodes on the cluster. It is useful for users to
-know the sizing of the cluster, and also schedulers to sort or bin pack
-the workload to clusters.
-
 #### Properties
 
 Name/value pairs to represent properties of the clusters. It could be a
@@ -508,7 +498,6 @@ Predefined condition types:
     healthy state. If one node is not healthy, the status of NodeHealthy
     is set to false with the message indicating details. (todo
     tolerance, it should be configurable)
-
   It would be useful to collect the healthiness of other subsystems in
   the cluster, e.g. network, dns, storage, or ingress. However, it is
   not easy to collect that information in a common way with different
@@ -517,6 +506,10 @@ Predefined condition types:
 - Joined: indicate the cluster is under management by the cluster manager.
   The status of the cluster SHOULD be updated by the cluster manager under
   this condition.
+- Schedulable: define if the cluster is eligible to be scheduled the workload. By
+  default, if at lease one node in the cluster is schedulable, the cluster will be set
+  as schedulable. In the future, we would consider a spec field to define the criteria
+  of schedulable status.
 
 ## API Example
 
@@ -534,16 +527,11 @@ spec:
 status:
  version:
    kubernetes: 1.28.0
- resources: # total resources of a cluster
-   capacity:
-     cpu: 12
-     memory: 12Gi
-   allocatable:
-     cpu: 10
-     memory: 16Gi
  properties:
    - name: clusterset.k8s.io
      value: some-clusterset
+   - name: location
+     value: apac
  conditions:
    - type: ControlPlaneHealthy
      status: True
@@ -557,7 +545,18 @@ status:
      status: True
      lastTransitionTime: "2023-05-08T07:58:55Z"
      message: ""
+   - type: Schedulable
+     status: True
+     lastTransitionTime: "2023-05-08T07:58:55Z"
+     message: ""
 ```
+
+### Scalability implication
+
+The API should provide summarized metadata of the cluster and relatively "static" cluster status.
+Dynamic data, e.g. cluster resource usage, should not be included in this API give it will bring
+heavy traffic to the control plane. A metrics collector system would be better suited in this
+scenario.
 
 ### Test Plan
 

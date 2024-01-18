@@ -100,6 +100,7 @@ tags, and then generate with `hack/update-toc.sh`.
   - [Status](#status)
     - [Version](#version)
     - [Properties](#properties)
+    - [Node Status](#node-status)
     - [Conditions](#conditions)
 - [API Example](#api-example)
   - [Scalability implication](#scalability-implication)
@@ -327,7 +328,7 @@ bogged down.
 
 #### Story 1: Multicluster Workload Distribution
 
-In this scenario, a standard API acts as a foundation for multicluster
+In this scenario, a unified API acts as a foundation for multicluster
 scheduling decisions across various clusters. This means that the
 API will provide a single point of contact to retrieve information that can be
 used to make informed scheduling decisions for workloads across multiple
@@ -341,7 +342,7 @@ Examples of the multicluster scheduling includes:
 - As a user I want to run a workload on an EKS cluster that resides in us-east-1.
   I want to submit my workload if and only if a cluster satisfies that constraint.
 - As a user I want to run a workload on a cluster that has certain CRDs installed.
-- As a user I want to deploy a workload to my on-prem cluster group.
+- As a user I want to deploy a workload to my on-prem clusters.
 - As a user I want to run a workload close to the data source or end-users.
 - As a user I want to run a workload to the less busy cluster.
 
@@ -476,7 +477,22 @@ minimum kubelet version, maximum kubelet version, and enabled featureset version
 
 Name/value pairs to represent properties of the clusters. It could be a
 collection of ClusterProperty resources, but could also be info based on
-other implementations.
+other implementations. The name of the cluster property can be predefined
+name from ClusterProperty resources and is allowed to be customized by
+different cluster managers.
+
+#### Node Status
+
+Record the number of nodes in the different status. It is not intended to
+record dynamic information of the nodes, e.g. resource usage, but more static
+status such as the number of nodes in ready or schedulable state. It is a
+list of type/count pairs, where type can only be:
+- Total: the count is the number of all the nodes.
+- Ready: the count is the number of nodes in the Ready state.
+- Schedulable: the count is the number of nodes in the Schedulable state.
+
+It leaves the room for a user or cluster manager to define customized type
+in the future.
 
 #### Conditions
 
@@ -506,10 +522,6 @@ Predefined condition types:
 - Joined: indicate the cluster is under management by the cluster manager.
   The status of the cluster SHOULD be updated by the cluster manager under
   this condition.
-- Schedulable: define if the cluster is eligible to be scheduled the workload. By
-  default, if at lease one node in the cluster is schedulable, the cluster will be set
-  as schedulable. In the future, we would consider a spec field to define the criteria
-  of schedulable status.
 
 ## API Example
 
@@ -532,20 +544,19 @@ status:
      value: some-clusterset
    - name: location
      value: apac
+ nodeStatus:
+   - type: Total
+     count: 10
+   - type: Ready
+     count: 8
+   - type: Schedulable
+     count: 6
  conditions:
    - type: ControlPlaneHealthy
      status: True
      lastTransitionTime: "2023-05-08T07:56:55Z"
      message: ""
-   - type: AllNodesHealthy
-     status: True
-     lastTransitionTime: "2023-05-08T07:57:55Z"
-     message: ""
    - type: Joined
-     status: True
-     lastTransitionTime: "2023-05-08T07:58:55Z"
-     message: ""
-   - type: Schedulable
      status: True
      lastTransitionTime: "2023-05-08T07:58:55Z"
      message: ""
@@ -554,9 +565,14 @@ status:
 ### Scalability implication
 
 The API should provide summarized metadata of the cluster and relatively "static" cluster status.
-Dynamic data, e.g. cluster resource usage, should not be included in this API give it will bring
+Dynamic data, e.g. cluster resource usage, should not be included in this API given it will bring
 heavy traffic to the control plane. A metrics collector system would be better suited in this
 scenario.
+
+The QPS for each single cluster object is supposed to be less than 1/30 (30s per update on
+average). It should be achievable since the cluster properties and node status in the status
+field are not supposed to be changed too frequenly. The Burst of each single cluster object
+is supposed to be 10 to handle initial join and sudden storm.
 
 ### Test Plan
 

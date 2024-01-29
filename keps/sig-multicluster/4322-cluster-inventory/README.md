@@ -92,15 +92,14 @@ tags, and then generate with `hack/update-toc.sh`.
   - [Risks and Mitigations](#risks-and-mitigations)
 - [Design Details](#design-details)
   - [Cluster Name](#cluster-name)
-    - [Option 1](#option-1)
-    - [Option 2](#option-2)
+    - [Example 1](#example-1)
+    - [Example 2](#example-2)
   - [Spec](#spec)
     - [Display name](#display-name)
     - [Cluster Manager](#cluster-manager)
   - [Status](#status)
     - [Version](#version)
     - [Properties](#properties)
-    - [Node Status](#node-status)
     - [Conditions](#conditions)
 - [API Example](#api-example)
   - [Scalability implication](#scalability-implication)
@@ -430,12 +429,17 @@ It is required that cluster name is unique for each cluster, and it
 should also be unique among different providers (cluster manager). It
 is cluster managers's responsibility to ensure the name uniqueness.
 
-#### Option 1
+It's the responsibility of the cluster manager platform administrator
+to ensure cluster name uniqueness.
+The examples below serve more as recommendations than hard requirements,
+providing guidance on best practices.
+
+#### Example 1
 
 The `metadata.name` of the cluster should never be set upon creation.
 Only `metadata.generateName` can be set.
 
-#### Option 2
+#### Example 2
 
 The `metadata.name` and `metadata.generateName` must have prefix which
 should be the same as the `spec.clusterManager.name`. Different cluster
@@ -480,19 +484,6 @@ collection of ClusterProperty resources, but could also be info based on
 other implementations. The name of the cluster property can be predefined
 name from ClusterProperty resources and is allowed to be customized by
 different cluster managers.
-
-#### Node Status
-
-Record the number of nodes in the different status. It is not intended to
-record dynamic information of the nodes, e.g. resource usage, but more static
-status such as the number of nodes in ready or schedulable state. It is a
-list of type/count pairs, where type can only be:
-- Total: the count is the number of all the nodes.
-- Ready: the count is the number of nodes in the Ready state.
-- Schedulable: the count is the number of nodes in the Schedulable state.
-
-It leaves the room for a user or cluster manager to define customized type
-in the future.
 
 #### Conditions
 
@@ -544,13 +535,6 @@ status:
      value: some-clusterset
    - name: location
      value: apac
- nodeStatus:
-   - type: Total
-     count: 10
-   - type: Ready
-     count: 8
-   - type: Schedulable
-     count: 6
  conditions:
    - type: ControlPlaneHealthy
      status: True
@@ -570,7 +554,7 @@ heavy traffic to the control plane. A metrics collector system would be better s
 scenario.
 
 The QPS for each single cluster object is supposed to be less than 1/30 (30s per update on
-average). It should be achievable since the cluster properties and node status in the status
+average). It should be achievable since the cluster properties in the status
 field are not supposed to be changed too frequenly. The Burst of each single cluster object
 is supposed to be 10 to handle initial join and sudden storm.
 

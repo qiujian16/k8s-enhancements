@@ -58,7 +58,7 @@ If none of those approvers are still appropriate, then changes to that list
 should be approved by the remaining approvers and/or the owning SIG (or
 SIG Architecture for cross-cutting KEPs).
 -->
-# KEP-4322: Cluster Inventory API
+# KEP-4322: Inventory Cluster API
 
 <!--
 This is the title of your KEP. Keep it short, simple, and descriptive. A good
@@ -195,7 +195,7 @@ cluster inventory. However, with the growing number of users managing
 multiple clusters and deploying applications across them, projects like
 Open Cluster Management (OCM), Karmada, Clusternet, and Fleet Manager
 have emerged. This document introduces a proposal for a new universal
-cluster inventory API. The objective is to establish a shared interface
+inventory cluster API. The objective is to establish a shared interface
 for cluster inventory, defining a standard for status reporting while
 allowing for multiple implementations.
 
@@ -220,7 +220,7 @@ solutions, we believe that it is critical to devise a common API where
 applications, toolsets, and human operators can easily discover clusters
 under management.
 
-By adopting this new cluster inventory API, consumers no longer need to
+By adopting this new inventory cluster API, consumers no longer need to
 concern themselves with the implementation details of various projects.
 Instead, they can leverage a foundational API for multi-cluster
 management. Examples of consumers includes:
@@ -229,13 +229,13 @@ management. Examples of consumers includes:
   distributing application/workload to multiple clusters. The scheduling
   can be based on certain cluster properties, e.g. cloud the cluster
   resides in, resources a cluster provides, or latency to some external
-  endpoints. A common cluster inventory API will give schedulers a
+  endpoints. A common inventory cluster API will give schedulers a
   standard to reason about clusters and help to foster the growth of
   this area.
 * GitOps tools (ArgoCD, flux etc) are having the requirement to deploy
   workload to multiple clusters. They either need to build the cluster
   concept by themselves or understand cluster API from each different
-  cluster management project. A common cluster inventory API can provide
+  cluster management project. A common inventory cluster API can provide
   a thin compatible layer for different projects.
 * Operation tools or customized external consumers: this API gives a
   common way for different clouds and vendors to define clusters,
@@ -250,7 +250,7 @@ List the specific goals of the KEP. What is it trying to achieve? How will we
 know that this has succeeded?
 -->
 
-* Establish a standardized cluster inventory API to represent clusters.
+* Establish a standardized inventory cluster API to represent clusters.
 * Lay the groundwork for multi-cluster tooling by providing a
   foundational component.
 * Accommodate multiple implementations to encourage flexibility and
@@ -300,21 +300,21 @@ the API proposed by this KEP aims to
 
 ### Terminology
 
-- **Cluster Manager**: An entity that creates the cluster inventory API 
+- **Cluster Manager**: An entity that creates the inventory cluster API 
   object per member cluster, and keeps their status up-to-date. Each
   cluster manager SHOULD be identified with a unique name. Each cluster
   inventory resource SHOULD be managed by only one cluster manager. Examples
   of cluster manager are projects like OCM, Karmada, Clusternet or Azure
   fleet manager.
 
-- **Cluster Inventory Consumer**: the person running the cluster managers
+- **Inventory Cluster Consumer**: the person running the cluster managers
   or the person developing extensions for cluster managers for the purpose of
   workload distribution, operation management etc.
 
 - **Member Cluster**: A kubernetes cluster that is managed by the cluster
   manager. A cluster manager SHOULD have sufficient permission to access
   the member cluster to fetch the information so it can update the status
-  of the cluster inventory API resource.
+  of the inventory cluster API resource.
 
 ### User Stories (Optional)
 
@@ -518,7 +518,7 @@ Predefined condition types:
 
 ```yaml
 apiVersion: multicluster.x-k8s.io/v1alpha1
-kind: ClusterInventory
+kind: InventoryCluster
 metadata:
  name: generated-cluster-name
  labels:
@@ -637,7 +637,7 @@ implementing this enhancement to ensure the enhancements have also solid foundat
 - The API should expose access information including but not limited to:
   - APIServer endpoint url of the member cluster.
   - Credential with limited access to the member cluster.
-- At least two providers and one consumer using cluster inventory API.
+- At least two providers and one consumer using inventory cluster API.
 
 #### GA
 

@@ -344,6 +344,9 @@ Examples of the multicluster scheduling includes:
 - As a user I want to deploy a workload to my on-prem clusters.
 - As a user I want to run a workload close to the data source or end-users.
 - As a user I want to run a workload to the less busy cluster.
+- As a user I want to deploy workloads to
+[Cluster API](https://github.com/kubernetes-sigs/cluster-api)
+managed clusters based on cluster location and platform.
 
 #### Story 2: Operations and Management
 

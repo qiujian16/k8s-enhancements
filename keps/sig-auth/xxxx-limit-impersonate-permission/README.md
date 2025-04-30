@@ -164,11 +164,13 @@ to allow the controller to impersonate. More detailed discussion is in this
 [issue](https://github.com/kubernetes/kubernetes/issues/27152)
 
 There are use cases that needs a controller to be able to impersonate:
-1. A controller impersonates a node the controller is running on.
+1. A controller impersonates a node the controller is running on. This happens when 
+per-node agents (CNI plugins for instance), want to read pods on a given node instead
+of unrestricted pod access.
 2. A controller runs as a deputy, receives request from the user, and impersonates
 the user to start/stop virtual machine or access vm console managed by kubevirt.
 
-This proposal is to introduce additional permission for impersonation, so that any 
+This proposal is to introduce additional permissions for impersonation, so that any 
 impersonator can impersonate in a more restricted way.
 
 ### Goals
@@ -183,11 +185,20 @@ of impersonated user and the requester.
 
 ## Proposal
 
-Introduce a set of verbs with prefix of `impersonate-on-`, e.g. `impersonate-on-create` and
-`impersonate-on-get`. The impersonator needs to have these verbs with certain resources to
-impersonate. For the requester, two permissions will be required:
+Introduce a set of verbs with prefix of `impersonate-on:`, e.g. `impersonate-on:create` and
+`impersonate-on:get`. The impersonator needs to have these verbs with certain resources to
+impersonate. 
 
-1. The permission to impersonate as a certain user. This is a cluster scoped
+Introduce verbs `impersonate:user` and `impersonate:scheduled-node`:
+- `impersonate:user` limits the impersonator to impersonate users with 
+certain names/groups/userextras. The resources must be `users`/`groups`/`userextras`.
+The resource names must be user names, group names or values in the user extras accoringly.
+- `impersonate:scheduled-node` that limits the impersonator to impersonate the node the
+impersonator is running on. The resource must be `nodes`.
+
+For the imperonsonator, two permissions will be required:
+
+1. The permission to impersonate a certain user. This is a cluster scoped
 permission.
 ```yaml
 apiVersion: rbac.authorization.k8s.io/v1
@@ -196,13 +207,13 @@ metadata:
   name: impersonate
 rules:
 - apiGroups:
-  - ""
+  - authentications.k8s.io
   resources:
   - users
   resourceNames:
   - someUser 
   verbs:
-  - impersonate
+  - impersonate:user
 ```
 2. The permission to impersonate on certain resource with certain verbs. This can be either
 cluster scoped or namespace scoped. 
@@ -218,20 +229,22 @@ rules:
   resources:
   - pods
   verbs:
-  - impersonate-on-list
-  - impersonate-on-watch
+  - impersonate-on:list
+  - impersonate-on:watch
 ```
 
 These permissions define: "The impersonator can impersonate a user with the name of
-someUser to list and watch pods in the default namespace." If the second permission is missing,
-the impersonator is disallowed to perform the actions.
+someUser to list and watch pods in the default namespace."
 
-The verb behind prefix `impersonate-on` can be any verb, and also can be "*" representing any verb.
+The verb behind prefix `impersonate-on:` can be any verb, and also can be "*" representing any verb.
 
 When receiving an impersonation request, the apiserver:
-- Verifies if the impersonator has permission to impersonate the target user
-- Verifies if the impersonator has permission to impersonate the target action
-- Only allows the impersonation if both conditions are met
+- Verifies if the impersonator has the legacy `impersonate` permission, allow the impersonation
+if the conddition met.
+- Verifies if the impersonator has the permission to impersonate with the scope of a general user or
+a scheduled node, 
+- Verifies if the impersonator has the permission to impersonate the target action
+- Only allows the impersonation if the above two conditions are met
 
 The impersonator does not need the permission for the target action.
 
@@ -239,7 +252,7 @@ The impersonator does not need the permission for the target action.
 
 #### Story 1
 
-As a controller, I want to impersonate a certain node to list pods on the node. The service account
+As a controller, I want to impersonate node I am running on to list/get pods on the node. The service account
 of the controller should have the permissions as below to perform the action:
 
 ```yaml
@@ -249,13 +262,11 @@ metadata:
   name: impersonate:node
 rules:
 - apiGroups:
-  - ""
+  - authentication.k8s.io
   resources:
-  - users
-  resourceNames:
-  - system:node:someNode
+  - nodes
   verbs:
-  - impersonate
+  - impersonate:scheduled-node
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -267,12 +278,13 @@ rules:
   resources:
   - pods
   verbs:
-  - impersonate-on-list
+  - impersonate-on:list
+  - impersonate-on:get
 ```
 
 #### Story 2
 
-As a controller, I am working as a deputy, receiving user's request to access virtual machine console.
+As a controller, I am working as a deputy, receiving any user's request to access virtual machine console.
 
 ```yaml
 apiVersion: rbac.authorization.k8s.io/v1
@@ -281,11 +293,11 @@ metadata:
   name: impersonate-user
 rules:
 - apiGroups:
-  - ""
+  - auhtentications.k8s.io
   resources:
   - users
   verbs:
-  - impersonate
+  - impersonate:user
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -298,7 +310,7 @@ rules:
     resources:
     - virtualmachines/console
     verbs:
-    - impersonate-on-get
+    - impersonate-on:get
 ```
 
 ### Risks and Mitigations
@@ -314,12 +326,12 @@ How will UX be reviewed, and by whom?
 
 Consider including folks who also work outside the SIG or subproject.
 -->
-#### The verbs with `impersonate-on-` prefix has been used by other component.
+#### The verbs with `impersonate-on:` prefix has been used by other component.
 
-There is possibility that the verbs with prefix of `impersonate-on-` have been
+There is possibility that the verbs with prefix of `impersonate-on:` have been
 used by other component, and been set in Role/ClusterRole. Since `impersonate`
 permission is also required for impersonator, the component will not get more
-power when permssion of `impersonate-on-` is given.
+power when permssion of `impersonate-on:` is given.
 
 ## Design Details
 
@@ -401,6 +413,74 @@ This can be done with:
 - a search in the Kubernetes bug triage tool (https://storage.googleapis.com/k8s-triage/index.html)
 -->
 
+- SAR check on impersonate user with permission:
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: impersonate-user
+rules:
+- apiGroups:
+  - auhtentications.k8s.io
+  resources:
+  - users
+  resourceNames:
+  - bob
+  verbs:
+  - impersonate:user
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: impersonate:vm:console
+  namespace: default
+rules:
+  - apiGroups:
+    - ""
+    resources:
+    - nodes
+    verbs:
+    - impersonate-on:list
+```
+  - The impersonator can impersonate bob.
+  - The impersonator cannot impersonate alice.
+  - The impersonator can impersonate on listing nodes
+  - The impersonator cannot impersonate on updating nodes
+
+- SAR check on impersonate scheduled node with permissions. The impersonator has the
+user extra info of `"authentication.kubernetes.io/node-name": "node1"`
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: impersonate-user
+rules:
+- apiGroups:
+  - auhtentications.k8s.io
+  resources:
+  - nodes
+  verbs:
+  - impersonate:scheduled-node
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: impersonate:vm:console
+  namespace: default
+rules:
+  - apiGroups:
+    - ""
+    resources:
+    - pods
+    verbs:
+    - impersonate-on:list
+```
+  - The impersonator can impersonate node1.
+  - The impersonator cannot impersonate node2.
+  - The impersonator cannot impersonate bob.
+  - The impersonator can impersonate on listing pods.
+  - The impersonator cannot impersonate on updating pods,
+
 - [test name](https://github.com/kubernetes/kubernetes/blob/2334b8469e1983c525c0c6382125710093a25883/test/integration/...): [integration master](https://testgrid.k8s.io/sig-release-master-blocking#integration-master?include-filter-by-regex=MyCoolFeature), [triage search](https://storage.googleapis.com/k8s-triage/index.html?test=MyCoolFeature)
 
 ##### e2e tests
@@ -481,43 +561,25 @@ enhancement:
 -->
 
 On upgrade to a version that enables the feature
-* the previous inpersonator with impersonate permission will not be able to impersonate. 
-To resolve this issue, user will need to create a clusterrole and bind it to
-the impersonator.
+* the previous inpersonator with impersonate permission will still work, but it is highly
+recommanded to use the new permissions with less privilege.
 
-```yaml
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: impersonate-any-action
-rules:
-- apiGroups:
-  - *
-  resources:
-  - *
-  verbs:
-  - impersonate-on-*
-```
-* authorization webhooks needs to recognize the verb with prefix of "impersonate-on-".
+
+* authorization webhooks needs to recognize the verb with prefix of `impersonate-on:` and
+`impersonate:`.
 
 On downgrade to a version that does not enable the feature by default, or if the feature is disabled.
-* No configuration is needed and the permission with `impersonate-on-{verb}` verb will be ignored.
-* request sent to authorization webhooks will no longer include "impersonate-on-" verb.
+* No configuration is needed and the permission with `impersonate-on:{verb}` and `impersonate:` verb will be ignored.
+* request sent to authorization webhooks will no longer include `impersonate-on:` and `impersonate:` verb.
 
 ### Version Skew Strategy
 
-<!--
-If applicable, how will the component handle version skew with other
-components? What are the guarantees? Make sure this is in the test plan.
+#### New kube-apiserver, old `impersonate` permission
+The impersonator will still be allowed to impersonate with unscoped permission
 
-Consider the following in developing a version skew strategy for this
-enhancement:
-- Does this enhancement involve coordinating behavior in the control plane and nodes?
-- How does an n-3 kubelet or kube-proxy without this feature available behave when this feature is used?
-- How does an n-1 kube-controller-manager or kube-scheduler without this feature available behave when this feature is used?
-- Will any other components on the node change? For example, changes to CSI,
-  CRI or CNI may require updating that component before the kubelet.
--->
+#### Old kube-apiserver, new `impersonate-on:` and `impersonate:` permission
+The impersonator will be denied to impersonate. This is safer since the impersonator permission is not enlarged
+with old kube-apiserver.
 
 ## Production Readiness Review Questionnaire
 
@@ -568,17 +630,15 @@ well as the [existing list] of feature gates.
 
 ###### Does enabling the feature change any default behavior?
 
-Yes. Impersonator with existing impersonate permission will not be allowed to impersonate
-anymore. An additional permission for the requester is needed to perform certain impersonate
-action.
+No. Impersonator with existing impersonate permission will still be allowed to impersonate
 
 ###### Can the feature be disabled once it has been enabled (i.e. can we roll back the enablement)?
 
-Yes.  Set the FeatureGate to false and restart the kube-apiserver.
+Yes. Set the FeatureGate to false and restart the kube-apiserver.
 
 ###### What happens if we reenable the feature if it was previously rolled back?
 
-Requester will need an additional permission to impersonate.
+No addtional configuration is needed.
 
 ###### Are there any tests for feature enablement/disablement?
 
@@ -603,7 +663,10 @@ This section must be completed when targeting beta to a release.
 
 ###### How can a rollout or rollback fail? Can it impact already running workloads?
 
-It impacts workloads that uses impersonation, which needs to add addition permissions.
+There is not impact on rollout, the impersonator with existing impersonate permission can still perform the action.
+When the system rollback, impersonator with `impersonate-on:` and `impersonate:` permission will no longer
+be authorized to impersonate. Impersonator will need to have the unscoped impersonate permission.
+
 
 ###### What specific metrics should inform a rollback?
 
@@ -888,7 +951,7 @@ shows controller is impersonating and the target user performs the action.
 
 ### Setting a special APIGroup suffix instead of special verb
 
-Instead of using a verb with prefix `impersonate-on`, a special apigroup suffix/prefix can be set for
+Instead of using a verb with prefix `impersonate-on:`, a special apigroup suffix/prefix can be set for
 each resource to be impersonated, e.g.
 
 ```yaml
@@ -904,6 +967,14 @@ Some concerns on using this approch:
 - impersonating on any APIGroup is hard to describe.
 - core APIGroup has to be specially treated.
 - the APIGroup might be too long for a CRD, e.g. cluster.x-k8s.io.imperonsation.k8s.io
+
+### Check permission intersaction of impersonator and target user
+
+This is an approach to check intersected permission of the impersonator and the target user, and
+only allow the action if both have the correct permission. Comparing to the proposed approach:
+this approach requires the impersonator to have the permission who is not desired to have, while
+in the proposed apporch, the impersonator's permission is clearer that it can only perform
+the action when impersonating.
 
 ## Infrastructure Needed (Optional)
 
